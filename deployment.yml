@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: node
+  name: node
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: node
+    spec:
+      containers:
+        - image: gcr.io/neon-framing-303105/github_rohitabraham02_nodejs
+          imagePullPolicy: IfNotPresent
+          name: node-js-sha256-1
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  labels:
+    app: node
+  name: node-hpa-lyqh
+  namespace: default
+spec:
+  maxReplicas: 5
+  metrics:
+    - resource:
+        name: cpu
+        targetAverageUtilization: 80
+      type: Resource
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: node
+---
+apiVersion: v1
+kind: Service
+metadata:
+  finalizers:
+    - service.kubernetes.io/load-balancer-cleanup
+  labels:
+    app: node
+  name: node-service
+  namespace: default
+spec:
+  clusterIP: 10.8.0.41
+  externalTrafficPolicy: Cluster
+  ports:
+    - nodePort: 30205
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: node
+  sessionAffinity: None
+  type: LoadBalancer
