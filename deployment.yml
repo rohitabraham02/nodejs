@@ -2,14 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: node
-  name: node
+    app: express-app
+  name: express-app
   namespace: default
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      app: node
+      app: express-app
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -18,19 +18,19 @@ spec:
   template:
     metadata:
       labels:
-        app: node
+        app: express-app
     spec:
       containers:
-        - image: gcr.io/neon-framing-303105/github_rohitabraham02_nodejs
+        - image: gcr.io/neon-framing-303105/github.com/rohitabraham02/nodejs
           imagePullPolicy: IfNotPresent
-          name: node-js-sha256-1
+          name: nodejs-1
 ---
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: node
-  name: node-hpa-lyqh
+    app: express-app
+  name: express-app-hpa-2s95
   namespace: default
 spec:
   maxReplicas: 5
@@ -39,30 +39,31 @@ spec:
         name: cpu
         targetAverageUtilization: 80
       type: Resource
-  minReplicas: 1
+  minReplicas: 2
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: node
+    name: express-app
 ---
 apiVersion: v1
 kind: Service
 metadata:
   finalizers:
     - service.kubernetes.io/load-balancer-cleanup
+  generateName: express-app-
   labels:
-    app: node
-  name: node-service
+    app: express-app
+  name: express-app-2g9z6
   namespace: default
 spec:
-  clusterIP: 10.8.0.41
+  clusterIP: 10.8.7.87
   externalTrafficPolicy: Cluster
   ports:
-    - nodePort: 30205
+    - nodePort: 31233
       port: 80
       protocol: TCP
       targetPort: 8080
   selector:
-    app: node
+    app: express-app
   sessionAffinity: None
   type: LoadBalancer
