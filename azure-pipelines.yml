@@ -33,7 +33,7 @@ stages:
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
-          $(tag)- task: AzureWebAppContainer@1
+          $(tag)
     - task: ArchiveFiles@2
       inputs:
         rootFolderOrFile: '$(Build.BinariesDirectory)'
@@ -41,3 +41,7 @@ stages:
         archiveType: 'zip'
         archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
         replaceExistingArchive: true
+    - task: AzureWebAppContainer@1
+      inputs:
+        azureSubscription: 'MSDN Platforms Subscription(2)(cb697725-96ec-4e23-b0f1-9a862b9b3a6e)'
+        appName: 'my-docker-webapp'
