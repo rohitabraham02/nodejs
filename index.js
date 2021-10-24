@@ -6,7 +6,7 @@ app.get('/', (req, res) => {
   res.send(`Hello ${name}!`);
 });
 
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 80;
 app.listen(port, () => {
   console.log(`helloworld: listening on port ${port}`);
 });
