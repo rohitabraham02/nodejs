@@ -1,4 +1,10 @@
 # Docker
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'MSDN Platforms Subscription(cb697725-96ec-4e23-b0f1-9a862b9b3a6e)'
+    scriptType: 'batch'
+    scriptLocation: 'inlineScript'
+    inlineScript: 'az container create -g $(resourceGrop) --name rohitabrahamnodejs --image $(acrLoginServer)/rohitabrahamnodejs:$(Build.BuildId) --cpu 1 --memory 1 --registry-login-server $(acrLoginServer) --registry-username $(acrName) --registry-password $(acrPassword) --dns-name-label rohitabrahamnodejs  --ports 80'
 # Build and push an image to Azure Container Registry
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
