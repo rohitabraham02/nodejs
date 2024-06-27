@@ -45,7 +45,7 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-app.post('/data', async (req, res) => {
+app.post('/', async (req, res) => {
   const db = admin.database();
   const ref = db.ref('sensor-logger');
   const data = req.body;
