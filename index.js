@@ -49,7 +49,7 @@ app.post('/', async (req, res) => {
   const db = admin.database();
   const ref = db.ref('sensor-logger');
   const data = req.body;
-
+console.log(clients);
   if (!data || !Array.isArray(data.payload)) {
     res.status(400).send('Invalid payload');
     return;
@@ -67,10 +67,11 @@ app.post('/', async (req, res) => {
   microphoneData.forEach(item => {
     microphoneRef.child(item.time.toString()).set(item.values);
   });
-
+ console.log(clients[item.deviceId])
   // Notify connected WebSocket clients
   data.payload.forEach(item => {
     if (clients[item.deviceId]) {
+      console.log(clients[item.deviceId])
       clients[item.deviceId].forEach(client => {
         client.send(JSON.stringify(item));
       });
