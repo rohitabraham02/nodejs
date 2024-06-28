@@ -1,39 +1,47 @@
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
+const WebSocket = require('ws');
+const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+app.use(cors());
 app.use(express.json());
 
 // Create HTTP server
 const server = http.createServer(app);
 
-// Create Socket.IO server
-const io = socketIo(server);
+// Create WebSocket server
+const wss = new WebSocket.Server({ server });
 
 // Store connected clients
 const clients = {};
 
-io.on('connection', (socket) => {
-  console.log('A client connected');
-  socket.on('register', (deviceId) => {
-    if (!clients[deviceId]) {
-      clients[deviceId] = [];
+wss.on('connection', (ws, req) => {
+  const params = new URLSearchParams(req.url.split('?')[1]);
+  const deviceId = params.get('deviceId');
+
+  if (!deviceId) {
+    ws.close(1008, 'Device ID required');
+    return;
+  }
+
+  if (!clients[deviceId]) {
+    clients[deviceId] = [];
+  }
+
+  clients[deviceId].push(ws);
+
+  ws.on('close', () => {
+    clients[deviceId] = clients[deviceId].filter(client => client !== ws);
+    if (clients[deviceId].length === 0) {
+      delete clients[deviceId];
     }
-    clients[deviceId].push(socket);
-    console.log(`Device ${deviceId} connected`);
   });
 
-  socket.on('disconnect', () => {
-    for (let deviceId in clients) {
-      clients[deviceId] = clients[deviceId].filter(client => client !== socket);
-      if (clients[deviceId].length === 0) {
-        delete clients[deviceId];
-      }
-    }
-    console.log('A client disconnected');
+  ws.on('message', (message) => {
+    console.log(`Received message from ${deviceId}: ${message}`);
   });
 });
 
@@ -49,7 +57,7 @@ app.post('/', (req, res) => {
   data.payload.forEach(item => {
     if (clients[item.deviceId]) {
       clients[item.deviceId].forEach(client => {
-        client.emit('data', item);
+        client.send(JSON.stringify(item));
       });
     }
   });
