@@ -70,11 +70,12 @@ console.log(clients);
  
   // Notify connected WebSocket clients
   data.payload.forEach(item => {
+    console.log(JSON.stringify(item));
     if (clients[item.deviceId]) {
  
       clients[item.deviceId].forEach(client => {
-
-        console.log(JSON.stringify(item));
+        console.log("test);
+        
         client.send("abc");
       });
     }
