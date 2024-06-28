@@ -3,6 +3,14 @@ const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
 
+const admin = require('firebase-admin');
+
+admin.initializeApp({
+  credential: admin.credential.applicationDefault(),
+  databaseURL: "https://ai-factory-project-357407-default-rtdb.firebaseio.com/"
+});
+
+
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -46,6 +54,8 @@ wss.on('connection', (ws, req) => {
 });
 
 app.post('/', (req, res) => {
+  const db = admin.firestore();
+  const ref = db.ref('sensor-logger');
   const data = req.body;
 
   if (!data || !Array.isArray(data.payload)) {
@@ -53,6 +63,18 @@ app.post('/', (req, res) => {
     return;
   }
 
+    const orientationData = data.payload.filter(item => item.name === 'orientation');
+  const microphoneData = data.payload.filter(item => item.name === 'microphone');
+
+  const orientationRef = ref.child('orientation');
+  orientationData.forEach(item => {
+    orientationRef.child(item.time.toString()).set(item.values);
+  });
+
+  const microphoneRef = ref.child('microphone');
+  microphoneData.forEach(item => {
+    microphoneRef.child(item.time.toString()).set(item.values);
+  });
   // Notify connected WebSocket clients
   data.payload.forEach(item => {
     if (clients[item.deviceId]) {
