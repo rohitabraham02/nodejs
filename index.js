@@ -74,7 +74,7 @@ console.log(clients);
     if (clients[item.deviceId]) {
  
       clients[item.deviceId].forEach(client => {
-        console.log("test);
+        console.log("test");
         
         client.send("abc");
       });
