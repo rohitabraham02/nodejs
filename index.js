@@ -1,11 +1,6 @@
 const express = require('express');
 const http = require('http');
-const WebSocket = require('ws');
-const admin = require('firebase-admin');
-
-admin.initializeApp({
-  databaseURL: "https://ai-factory-project-357407-default-rtdb.firebaseio.com/"
-});
+const socketIo = require('socket.io');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -15,74 +10,51 @@ app.use(express.json());
 // Create HTTP server
 const server = http.createServer(app);
 
-// Create WebSocket server
-const wss = new WebSocket.Server({ server });
+// Create Socket.IO server
+const io = socketIo(server);
 
 // Store connected clients
 const clients = {};
 
-wss.on('connection', (ws, req) => {
-  const params = new URLSearchParams(req.url.split('?')[1]);
-  const deviceId = params.get('deviceId');
-
-  if (!deviceId) {
-    ws.close(1008, 'Device ID required');
-    return;
-  }
-
-  if (!clients[deviceId]) {
-    clients[deviceId] = [];
-  }
-
-  clients[deviceId].push(ws);
-
-  ws.on('close', () => {
-    clients[deviceId] = clients[deviceId].filter(client => client !== ws);
+io.on('connection', (socket) => {
+  console.log('A client connected');
+  socket.on('register', (deviceId) => {
+    if (!clients[deviceId]) {
+      clients[deviceId] = [];
+    }
+    clients[deviceId].push(socket);
+    console.log(`Device ${deviceId} connected`);
   });
 
-  ws.on('message', (message) => {
-    console.log(`Received message from ${deviceId}: ${message}`);
-     ws.send(`Echo: ${message}`);
+  socket.on('disconnect', () => {
+    for (let deviceId in clients) {
+      clients[deviceId] = clients[deviceId].filter(client => client !== socket);
+      if (clients[deviceId].length === 0) {
+        delete clients[deviceId];
+      }
+    }
+    console.log('A client disconnected');
   });
 });
 
-app.post('/', async (req, res) => {
-  const db = admin.database();
-  const ref = db.ref('sensor-logger');
+app.post('/', (req, res) => {
   const data = req.body;
-console.log(clients);
+
   if (!data || !Array.isArray(data.payload)) {
     res.status(400).send('Invalid payload');
     return;
   }
 
-  const orientationData = data.payload.filter(item => item.name === 'orientation');
-  const microphoneData = data.payload.filter(item => item.name === 'microphone');
-
-  const orientationRef = ref.child('orientation');
-  orientationData.forEach(item => {
-    orientationRef.child(item.time.toString()).set(item.values);
-  });
-
-  const microphoneRef = ref.child('microphone');
-  microphoneData.forEach(item => {
-    microphoneRef.child(item.time.toString()).set(item.values);
-  });
- 
   // Notify connected WebSocket clients
   data.payload.forEach(item => {
-    console.log(JSON.stringify(item));
     if (clients[item.deviceId]) {
- 
       clients[item.deviceId].forEach(client => {
-        console.log("test");
-        
-        client.send("abc");
+        client.emit('data', item);
       });
     }
   });
 
-  res.status(200).send('Data added successfully');
+  res.status(200).send('Data sent to clients successfully');
 });
 
 server.listen(PORT, () => {
