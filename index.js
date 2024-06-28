@@ -67,7 +67,7 @@ console.log(clients);
   microphoneData.forEach(item => {
     microphoneRef.child(item.time.toString()).set(item.values);
   });
- console.log(clients[item.deviceId])
+ 
   // Notify connected WebSocket clients
   data.payload.forEach(item => {
     if (clients[item.deviceId]) {
