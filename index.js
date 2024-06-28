@@ -54,7 +54,8 @@ wss.on('connection', (ws, req) => {
 });
 
 app.post('/', (req, res) => {
-  const db = admin.firestore();
+  const db = admin.firestore
+  console.log(db);
   const ref = db.ref('sensor-logger');
   const data = req.body;
 
