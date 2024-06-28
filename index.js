@@ -71,9 +71,9 @@ console.log(clients);
   // Notify connected WebSocket clients
   data.payload.forEach(item => {
     if (clients[item.deviceId]) {
- //     console.log(clients[item.deviceId])
+ 
       clients[item.deviceId].forEach(client => {
-        console.log(client);
+
         console.log(JSON.stringify(item));
         client.send(JSON.stringify(item));
       });
