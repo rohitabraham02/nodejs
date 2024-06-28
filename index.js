@@ -42,6 +42,7 @@ wss.on('connection', (ws, req) => {
 
   ws.on('message', (message) => {
     console.log(`Received message from ${deviceId}: ${message}`);
+     ws.send(`Echo: ${message}`);
   });
 });
 
