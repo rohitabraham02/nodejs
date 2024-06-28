@@ -54,17 +54,16 @@ wss.on('connection', (ws, req) => {
 });
 
 app.post('/', (req, res) => {
-//  const db = admin.database();
+  const db = admin.database();
 
-//  const ref = db.ref('sensor-logger');
+  const ref = db.ref('sensor-logger');
   const data = req.body;
-console.log(data);
   if (!data || !Array.isArray(data.payload)) {
     res.status(400).send('Invalid payload');
     return;
   }
 
-/*    const orientationData = data.payload.filter(item => item.name === 'orientation');
+    const orientationData = data.payload.filter(item => item.name === 'orientation');
   const microphoneData = data.payload.filter(item => item.name === 'microphone');
 
   const orientationRef = ref.child('orientation');
@@ -76,11 +75,11 @@ console.log(data);
   microphoneData.forEach(item => {
     microphoneRef.child(item.time.toString()).set(item.values);
   });
-  */
+  
   // Notify connected WebSocket clients
   data.payload.forEach(item => {
-    if (clients[item.deviceId]) {
-      clients[item.deviceId].forEach(client => {
+    if (clients[data.deviceId]) {
+      clients[data.deviceId].forEach(client => {
         client.send(JSON.stringify(item));
       });
     }
