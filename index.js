@@ -58,7 +58,7 @@ app.post('/', (req, res) => {
 
 //  const ref = db.ref('sensor-logger');
   const data = req.body;
-
+console.log(data);
   if (!data || !Array.isArray(data.payload)) {
     res.status(400).send('Invalid payload');
     return;
