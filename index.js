@@ -2,14 +2,11 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
-
 const admin = require('firebase-admin');
 
 admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  databaseURL: "https://ai-factory-project-357407-default-rtdb.firebaseio.com/"
+  credential: admin.credential.applicationDefault()
 });
-
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -53,39 +50,53 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-app.post('/', (req, res) => {
-  const db = admin.database();
-
-  const ref = db.ref('sensor-logger');
+app.post('/', async (req, res) => {
+  const db = admin.firestore();
   const data = req.body;
+
   if (!data || !Array.isArray(data.payload)) {
     res.status(400).send('Invalid payload');
     return;
   }
 
-    const orientationData = data.payload.filter(item => item.name === 'orientation');
+  const orientationData = data.payload.filter(item => item.name === 'orientation');
   const microphoneData = data.payload.filter(item => item.name === 'microphone');
 
-  const orientationRef = ref.child('orientation');
-  orientationData.forEach(item => {
-    orientationRef.child(item.time.toString()).set(item.values);
-  });
+  try {
+    const batch = db.batch();
 
-  const microphoneRef = ref.child('microphone');
-  microphoneData.forEach(item => {
-    microphoneRef.child(item.time.toString()).set(item.values);
-  });
-  
-  // Notify connected WebSocket clients
-  data.payload.forEach(item => {
-    if (clients[data.deviceId]) {
-      clients[data.deviceId].forEach(client => {
-        client.send(JSON.stringify(item));
-      });
-    }
-  });
+    orientationData.forEach(item => {
+      const docRef = db.collection('orientation')
+        .doc(data.deviceId)
+        .collection(item.time.toString())
+        .doc('values');
+      batch.set(docRef, item.values);
+    });
 
-  res.status(200).send('Data sent to clients successfully');
+    microphoneData.forEach(item => {
+      const docRef = db.collection('microphone')
+        .doc(data.deviceId)
+        .collection(item.time.toString())
+        .doc('values');
+      batch.set(docRef, item.values);
+    });
+
+    await batch.commit();
+
+    // Notify connected WebSocket clients
+    data.payload.forEach(item => {
+      if (clients[data.deviceId]) {
+        clients[data.deviceId].forEach(client => {
+          client.send(JSON.stringify(item));
+        });
+      }
+    });
+
+    res.status(200).send('Data sent to clients and saved to Firestore successfully');
+  } catch (error) {
+    console.error('Error writing to Firestore:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 server.listen(PORT, () => {
