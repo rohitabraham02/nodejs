@@ -59,14 +59,14 @@ app.post('/', async (req, res) => {
     return;
   }
 
-  const orientationData = data.payload.filter(item => item.name === 'Accelerometer');
+  const orientationData = data.payload.filter(item => item.name === 'accelerometer');
   const microphoneData = data.payload.filter(item => item.name === 'microphone');
 
   try {
     const batch = db.batch();
 
     orientationData.forEach(item => {
-      const docRef = db.collection('Accelerometer')
+      const docRef = db.collection('accelerometer')
         .doc(data.deviceId)
         .collection(item.time.toString())
         .doc('values');
