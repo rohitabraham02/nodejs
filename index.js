@@ -46,6 +46,7 @@ wss.on('connection', (ws, req) => {
   ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message);
+      console.log(data);
       if (!data || !Array.isArray(data.payload)) {
         ws.send('Invalid payload');
         return;
