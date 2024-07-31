@@ -80,7 +80,7 @@ wss.on('connection', (ws, req) => {
       await batch.commit();
 
       // Emit event to all connected clients
-      eventEmitter.emit('data', data);
+  //    eventEmitter.emit('data', data);
 
       ws.send('Data sent to clients and saved to Firestore successfully');
     } catch (error) {
