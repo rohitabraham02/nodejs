@@ -3,6 +3,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
 const admin = require('firebase-admin');
+const EventEmitter = require('events');
 
 admin.initializeApp({
   credential: admin.credential.applicationDefault()
@@ -14,13 +15,10 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
-// Create HTTP server
 const server = http.createServer(app);
-
-// Create WebSocket server
 const wss = new WebSocket.Server({ server });
+const eventEmitter = new EventEmitter();
 
-// Store connected clients
 const clients = {};
 
 wss.on('connection', (ws, req) => {
@@ -45,57 +43,59 @@ wss.on('connection', (ws, req) => {
     }
   });
 
-  ws.on('message', (message) => {
-    console.log(`Received message from ${deviceId}: ${message}`);
+  ws.on('message', async (message) => {
+    try {
+      const data = JSON.parse(message);
+      if (!data || !Array.isArray(data.payload)) {
+        ws.send('Invalid payload');
+        return;
+      }
+
+      const orientationData = data.payload.filter(item => item.name === 'accelerometer');
+      const microphoneData = data.payload.filter(item => item.name === 'microphone');
+
+      const db = admin.firestore();
+      const batch = db.batch();
+
+      orientationData.forEach(item => {
+        if (item.time && item.values) {
+          const docRef = db.collection('accelerometer')
+            .doc(deviceId)
+            .collection(item.time.toString())
+            .doc('values');
+          batch.set(docRef, item.values);
+        }
+      });
+
+      microphoneData.forEach(item => {
+        if (item.time && item.values) {
+          const docRef = db.collection('microphone')
+            .doc(deviceId)
+            .collection(item.time.toString())
+            .doc('values');
+          batch.set(docRef, item.values);
+        }
+      });
+
+      await batch.commit();
+
+      // Emit event to all connected clients
+      eventEmitter.emit('data', data);
+
+      ws.send('Data sent to clients and saved to Firestore successfully');
+    } catch (error) {
+      console.error('Error processing message:', error);
+      ws.send('Internal Server Error');
+    }
   });
 });
 
-app.post('/', async (req, res) => {
-  const db = admin.firestore();
-  const data = req.body;
-
-  if (!data || !Array.isArray(data.payload)) {
-    res.status(400).send('Invalid payload');
-    return;
-  }
-
-  const orientationData = data.payload.filter(item => item.name === 'accelerometer');
-  const microphoneData = data.payload.filter(item => item.name === 'microphone');
-
-  try {
-    const batch = db.batch();
-
-    orientationData.forEach(item => {
-      const docRef = db.collection('accelerometer')
-        .doc(data.deviceId)
-        .collection(item.time.toString())
-        .doc('values');
-      batch.set(docRef, item.values);
+eventEmitter.on('data', (data) => {
+  // Broadcast data to all connected WebSocket clients
+  for (const deviceId in clients) {
+    clients[deviceId].forEach(client => {
+      client.send(JSON.stringify(data));
     });
-
-    microphoneData.forEach(item => {
-      const docRef = db.collection('microphone')
-        .doc(data.deviceId)
-        .collection(item.time.toString())
-        .doc('values');
-      batch.set(docRef, item.values);
-    });
-
-    await batch.commit();
-
-    // Notify connected WebSocket clients
-    data.payload.forEach(item => {
-      if (clients[data.deviceId]) {
-        clients[data.deviceId].forEach(client => {
-          client.send(JSON.stringify(item));
-        });
-      }
-    });
-
-    res.status(200).send('Data sent to clients and saved to Firestore successfully');
-  } catch (error) {
-    console.error('Error writing to Firestore:', error);
-    res.status(500).send('Internal Server Error');
   }
 });
 
