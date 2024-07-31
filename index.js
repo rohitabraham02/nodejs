@@ -82,7 +82,7 @@ wss.on('connection', (ws, req) => {
       // Emit event to all connected clients
   //    eventEmitter.emit('data', data);
 
-      ws.send('Data sent to clients and saved to Firestore successfully');
+  //    ws.send('Data sent to clients and saved to Firestore successfully');
     } catch (error) {
       console.error('Error processing message:', error);
       ws.send('Internal Server Error');
