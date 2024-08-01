@@ -46,7 +46,7 @@ wss.on('connection', (ws, req) => {
   ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message);
-      if (!data || typeof data.channel !== 'string' ') {
+      if (!data || typeof data.channel !== 'string') {
         ws.send({'error':'Invalid payload'});
         return;
       }
