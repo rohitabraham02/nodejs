@@ -81,7 +81,9 @@ wss.on('connection', (ws, req) => {
 eventEmitter.on('data', (data, senderWs) => {
   // Broadcast data to all connected WebSocket clients except the sender
   for (const deviceId in clients) {
-    clients[deviceId].forEach(client => {
+    clients[deviceId].forEach(client => 
+      console.log("client"+ client);
+      console.log(senderWs);
       if (client !== senderWs) {
         client.send(JSON.stringify(data));
       }
