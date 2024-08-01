@@ -83,7 +83,6 @@ eventEmitter.on('data', (data, senderWs) => {
   for (const deviceId in clients) {
     clients[deviceId].forEach(client => 
     
-      console.log(senderWs);
       if (client !== senderWs) {
         client.send(JSON.stringify(data));
       }
