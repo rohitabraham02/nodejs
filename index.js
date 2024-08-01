@@ -46,7 +46,7 @@ wss.on('connection', (ws, req) => {
   ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message);
-      if (!data || typeof data.channel !== 'string') {
+      if (!data || typeof data.channel !== 'string' || typeof data.data !== 'string') {
         ws.send('Invalid payload');
         return;
       }
@@ -67,22 +67,24 @@ wss.on('connection', (ws, req) => {
 
       await batch.commit();
 
-      // Emit event to all connected clients
-      eventEmitter.emit('data', data);
+      // Emit event to all connected clients except the sender
+      eventEmitter.emit('data', data, ws);
 
       ws.send('Data sent to clients and saved to Firestore successfully');
     } catch (error) {
       console.error('Error processing message:', error);
-      ws.send('Internal Server Error');
+    
     }
   });
 });
 
-eventEmitter.on('data', (data) => {
-  // Broadcast data to all connected WebSocket clients
+eventEmitter.on('data', (data, senderWs) => {
+  // Broadcast data to all connected WebSocket clients except the sender
   for (const deviceId in clients) {
     clients[deviceId].forEach(client => {
-      client.send(JSON.stringify(data));
+      if (client !== senderWs) {
+        client.send(JSON.stringify(data));
+      }
     });
   }
 });
