@@ -46,44 +46,31 @@ wss.on('connection', (ws, req) => {
   ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message);
-      console.log(data);
-      if (!data || !Array.isArray(data.payload)) {
+      if (!data || typeof data.channel !== 'string' || typeof data.data !== 'string') {
         ws.send('Invalid payload');
         return;
       }
 
-      const orientationData = data.payload.filter(item => item.name === 'accelerometer');
-      const microphoneData = data.payload.filter(item => item.name === 'microphone');
-
       const db = admin.firestore();
       const batch = db.batch();
 
-      orientationData.forEach(item => {
-        if (item.time && item.values) {
-          const docRef = db.collection('accelerometer')
-            .doc(deviceId)
-            .collection(item.time.toString())
-            .doc('values');
-          batch.set(docRef, item.values);
-        }
-      });
-
-      microphoneData.forEach(item => {
-        if (item.time && item.values) {
-          const docRef = db.collection('microphone')
-            .doc(deviceId)
-            .collection(item.time.toString())
-            .doc('values');
-          batch.set(docRef, item.values);
-        }
-      });
+      if (data.channel === 'accelerometer' || data.channel === 'microphone') {
+        const docRef = db.collection(data.channel)
+          .doc(deviceId)
+          .collection(Date.now().toString())
+          .doc('values');
+        batch.set(docRef, { value: data.data });
+      } else {
+        ws.send('Unsupported channel');
+        return;
+      }
 
       await batch.commit();
 
       // Emit event to all connected clients
-  //    eventEmitter.emit('data', data);
+      eventEmitter.emit('data', data);
 
-  //    ws.send('Data sent to clients and saved to Firestore successfully');
+      ws.send('Data sent to clients and saved to Firestore successfully');
     } catch (error) {
       console.error('Error processing message:', error);
       ws.send('Internal Server Error');
