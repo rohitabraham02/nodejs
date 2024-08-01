@@ -47,7 +47,7 @@ wss.on('connection', (ws, req) => {
     try {
       const data = JSON.parse(message);
       if (!data || typeof data.channel !== 'string') {
-        ws.send({'error':'Invalid payload'});
+        ws.send(JSON.stringify({ error: 'Invalid payload' }));
         return;
       }
 
@@ -61,7 +61,7 @@ wss.on('connection', (ws, req) => {
           .doc('values');
         batch.set(docRef, { value: data.data });
       } else {
-        ws.send('Unsupported channel');
+        ws.send(JSON.stringify({ error: 'Unsupported channel' }));
         return;
       }
 
@@ -70,10 +70,9 @@ wss.on('connection', (ws, req) => {
       // Emit event to all connected clients except the sender
       eventEmitter.emit('data', data, ws);
 
-     
     } catch (error) {
       console.error('Error processing message:', error);
-    
+      ws.send(JSON.stringify({ error: 'Error processing message' }));
     }
   });
 });
@@ -81,8 +80,7 @@ wss.on('connection', (ws, req) => {
 eventEmitter.on('data', (data, senderWs) => {
   // Broadcast data to all connected WebSocket clients except the sender
   for (const deviceId in clients) {
-    clients[deviceId].forEach(client => 
-    
+    clients[deviceId].forEach(client => {
       if (client !== senderWs) {
         client.send(JSON.stringify(data));
       }
@@ -93,3 +91,4 @@ eventEmitter.on('data', (data, senderWs) => {
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
