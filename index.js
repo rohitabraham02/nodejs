@@ -70,7 +70,7 @@ wss.on('connection', (ws, req) => {
       // Emit event to all connected clients except the sender
       eventEmitter.emit('data', data, ws);
 
-      ws.send('Data sent to clients and saved to Firestore successfully');
+     
     } catch (error) {
       console.error('Error processing message:', error);
     
