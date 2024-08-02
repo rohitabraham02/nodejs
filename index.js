@@ -54,7 +54,7 @@ wss.on('connection', (ws, req) => {
       const db = admin.firestore();
       const batch = db.batch();
 
-      if (data.channel === 'accelerometer' || data.channel === 'microphone') {
+      if (data.channel === 'accelerometer' || data.channel === 'microphone' || data.channel ==='ambientlight'|| data.channel === 'location'|| data.channel === 'gyroscope'|| data.channel ===  'absoluteorientation'|| data.channel === 'battery') {
         const docRef = db.collection(data.channel)
           .doc(deviceId)
           .collection(Date.now().toString())
