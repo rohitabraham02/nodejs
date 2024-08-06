@@ -46,27 +46,6 @@ wss.on('connection', (ws, req) => {
   ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message);
-      if (!data || typeof data.channel !== 'string') {
-        ws.send(JSON.stringify({ error: 'Invalid payload' }));
-        return;
-      }
-
-      const db = admin.firestore();
-      const batch = db.batch();
-
-      if (data.channel === 'accelerometer' || data.channel === 'microphone' || data.channel ==='ambientlight'|| data.channel === 'location'|| data.channel === 'gyroscope'|| data.channel ===  'absoluteorientation'|| data.channel === 'battery') {
-        const docRef = db.collection(data.channel)
-          .doc(deviceId)
-          .collection(Date.now().toString())
-          .doc('values');
-        batch.set(docRef, { value: data.data });
-      } else {
-        ws.send(JSON.stringify({ error: 'Unsupported channel' }));
-        return;
-      }
-
-      await batch.commit();
-
       // Emit event to all connected clients except the sender
       eventEmitter.emit('data', data, ws);
 
@@ -88,7 +67,41 @@ eventEmitter.on('data', (data, senderWs) => {
   }
 });
 
+app.post('/', async (req, res) => {
+  try {
+    const { deviceId, channel, data } = req.body;
+
+    if (!deviceId || typeof channel !== 'string' || !data) {
+      res.status(400).send({ error: 'Invalid payload' });
+      return;
+    }
+
+    const db = admin.firestore();
+    const batch = db.batch();
+
+    if (['accelerometer', 'microphone', 'ambientlight', 'location', 'gyroscope', 'absoluteorientation', 'battery'].includes(channel)) {
+      const docRef = db.collection(channel)
+        .doc(deviceId)
+        .collection(Date.now().toString())
+        .doc('values');
+      batch.set(docRef, { value: data });
+    } else {
+      res.status(400).send({ error: 'Unsupported channel' });
+      return;
+    }
+
+    await batch.commit();
+
+    // Emit event to all connected clients except the sender
+
+    res.status(200).send({ success: true });
+
+  } catch (error) {
+    console.error('Error processing message:', error);
+    res.status(500).send({ error: 'Error processing message' });
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
