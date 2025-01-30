@@ -78,7 +78,7 @@ app.post('/', async (req, res) => {
 
     const db = admin.firestore();
     const batch = db.batch();
-
+ console.log(req.body);
     if (['accelerometer', 'microphone', 'ambientlight', 'location', 'gyroscope', 'absoluteorientation', 'battery'].includes(channel)) {
       const docRef = db.collection(channel)
         .doc(deviceId)
