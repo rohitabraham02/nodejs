@@ -79,16 +79,13 @@ app.post('/', async (req, res) => {
     const db = admin.firestore();
     const batch = db.batch();
  console.log(req.body);
-    if (['accelerometer', 'microphone', 'ambientlight', 'location', 'gyroscope', 'absoluteorientation', 'battery','thermal-Home-K120076'].includes(channel)) {
+   
       const docRef = db.collection(channel)
         .doc(deviceId)
         .collection(Date.now().toString())
         .doc('values');
       batch.set(docRef, { value: data });
-    } else {
-      res.status(400).send({ error: 'Unsupported channel' });
-      return;
-    }
+    
 
     await batch.commit();
 
