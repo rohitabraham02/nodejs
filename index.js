@@ -8,7 +8,9 @@ const EventEmitter = require('events');
 admin.initializeApp({
   credential: admin.credential.applicationDefault()
 });
+//var someObject = require('./service.json')
 
+//admin.initializeApp({ credential: admin.credential.cert(someObject)});
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -69,21 +71,31 @@ eventEmitter.on('data', (data, senderWs) => {
 
 app.post('/', async (req, res) => {
   try {
+    idToken = req.headers.authorization.split('Bearer ')[1];
+    const decodedIdToken = await admin.auth().verifyIdToken(idToken);
+    console.log('ID Token correctly decoded', decodedIdToken.firebase.tenant);
+    const tenantToken = await admin.auth().tenantManager().getTenant(decodedIdToken.firebase.tenant)
+      console.log(tenantToken.displayName)
     const { deviceId, channel, data } = req.body;
 
     if (!deviceId || typeof channel !== 'string' || !data) {
       res.status(400).send({ error: 'Invalid payload' });
       return;
     }
+    const [channelId , zone, sensorId] = channel.split('-');
 
+    console.log("Channel:", channel);   // thermal
+    console.log("Zone:", zone);         // Door
+    console.log("Device ID:", sensorId); // K120077
     const db = admin.firestore();
     const batch = db.batch();
  console.log(req.body);
-   
-      const docRef = db.collection(channel)
+   const  path = "automate-ai"+"/"+tenantToken.displayName+"/ai-senses/"+deviceId+"/"+ zone + "/" + channelId +"/"+sensorId+"/"+Date.now().toString();
+    const docRef = db.doc(path);
+  /*    const docRef = db.collection(tenantToken.displayName/"ai-senses")
         .doc(deviceId)
         .collection(Date.now().toString())
-        .doc('values');
+        .doc('values');*/
       batch.set(docRef, { value: data });
     
 
