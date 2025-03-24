@@ -132,7 +132,7 @@ app.post('/', async (req, res) => {
     
     // Data document (same as before)
     const dataDocRef = sensorDocRef
-      .collection(timestamp)
+      .collection("timestamp")
       .doc(timestamp);
     
     batch.set(dataDocRef, { value: data });
