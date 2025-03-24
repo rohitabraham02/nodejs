@@ -5,12 +5,12 @@ const cors = require('cors');
 const admin = require('firebase-admin');
 const EventEmitter = require('events');
 
-admin.initializeApp({
+/*admin.initializeApp({
   credential: admin.credential.applicationDefault()
-});
-//var someObject = require('./service.json')
+});*/
+var someObject = require('./service.json')
 
-//admin.initializeApp({ credential: admin.credential.cert(someObject)});
+admin.initializeApp({ credential: admin.credential.cert(someObject)});
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -71,38 +71,74 @@ eventEmitter.on('data', (data, senderWs) => {
 
 app.post('/', async (req, res) => {
   try {
-    idToken = req.headers.authorization.split('Bearer ')[1];
+    const idToken = req.headers.authorization.split('Bearer ')[1];
     const decodedIdToken = await admin.auth().verifyIdToken(idToken);
-    console.log('ID Token correctly decoded', decodedIdToken.firebase.tenant);
-    const tenantToken = await admin.auth().tenantManager().getTenant(decodedIdToken.firebase.tenant)
-      console.log(tenantToken.displayName)
+    const tenantToken = await admin.auth().tenantManager().getTenant(decodedIdToken.firebase.tenant);
     const { deviceId, channel, data } = req.body;
-
+    
     if (!deviceId || typeof channel !== 'string' || !data) {
       res.status(400).send({ error: 'Invalid payload' });
       return;
     }
-    const [channelId , zone, sensorId] = channel.split('-');
-
-    console.log("Channel:", channel);   // thermal
-    console.log("Zone:", zone);         // Door
-    console.log("Device ID:", sensorId); // K120077
+    
+    const [channelId, zone, sensorId] = channel.split('-');
     const db = admin.firestore();
     const batch = db.batch();
- console.log(req.body);
-   const  path = "automate-ai"+"/"+tenantToken.displayName+"/ai-senses/"+deviceId+"/"+ zone + "/" + channelId +"/"+sensorId+"/"+Date.now().toString();
-    const docRef = db.doc(path);
-  /*    const docRef = db.collection(tenantToken.displayName/"ai-senses")
-        .doc(deviceId)
-        .collection(Date.now().toString())
-        .doc('values');*/
-      batch.set(docRef, { value: data });
     
-
+    const tenantName = tenantToken.displayName;
+    const timestamp = Date.now().toString();
+    
+    // Device document
+    const deviceDocRef = db
+      .collection("automate-ai")
+      .doc(tenantName)
+      .collection("ai-senses")
+      .doc(deviceId);
+    
+    batch.set(deviceDocRef, { 
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    
+    // Zone document
+    const zoneDocRef = deviceDocRef
+      .collection("zones")
+      .doc(zone);
+    
+    batch.set(zoneDocRef, { 
+      zoneId: zone,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp() 
+    }, { merge: true });
+    
+    // Channel document
+    const channelDocRef = zoneDocRef
+      .collection("channels")
+      .doc(channelId);
+    
+    batch.set(channelDocRef, { 
+      channelId: channelId,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp() 
+    }, { merge: true });
+    
+    // Sensor document
+    const sensorDocRef = channelDocRef
+      .collection("sensors")
+      .doc(sensorId);
+    
+    batch.set(sensorDocRef, { 
+      sensorId: sensorId,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp() 
+    }, { merge: true });
+    
+    // Data document (same as before)
+    const dataDocRef = sensorDocRef
+      .collection(timestamp)
+      .doc(timestamp);
+    
+    batch.set(dataDocRef, { value: data });
+    
     await batch.commit();
-
-    // Emit event to all connected clients except the sender
-
+    
     res.status(200).send({ success: true });
 
   } catch (error) {
@@ -110,6 +146,7 @@ app.post('/', async (req, res) => {
     res.status(500).send({ error: 'Error processing message' });
   }
 });
+
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
