@@ -5,12 +5,12 @@ const cors = require('cors');
 const admin = require('firebase-admin');
 const EventEmitter = require('events');
 
-/*admin.initializeApp({
+admin.initializeApp({
   credential: admin.credential.applicationDefault()
-});*/
-var someObject = require('./service.json')
+});
+//var someObject = require('./service.json')
 
-admin.initializeApp({ credential: admin.credential.cert(someObject)});
+//admin.initializeApp({ credential: admin.credential.cert(someObject)});
 const app = express();
 const PORT = process.env.PORT || 8080;
 
