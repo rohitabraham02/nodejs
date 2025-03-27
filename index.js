@@ -141,6 +141,8 @@ app.post('/', async (req, res) => {
     batch.set(dataDocRef, { value: data });
     
     await batch.commit();
+    // Emit data AFTER successful commit to Firebase
+    eventEmitter.emit('data', { deviceId, channel, data });
     
     res.status(200).send({ success: true });
 
