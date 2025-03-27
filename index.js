@@ -71,11 +71,10 @@ eventEmitter.on('data', (data, senderWs) => {
 
 app.post('/', async (req, res) => {
   try {
-    console.log("req"+req.headers.authorization);
-    console.log("req1"+req.headers.authorization.split('Bearer ')[1]);
     const idToken = req.headers.authorization.split('Bearer ')[1];
     const decodedIdToken = await admin.auth().verifyIdToken(idToken);
     const tenantToken = await admin.auth().tenantManager().getTenant(decodedIdToken.firebase.tenant);
+    console.log(req.body)
     const { deviceId, channel, data } = req.body;
     
     if (!deviceId || typeof channel !== 'string' || !data) {
@@ -89,7 +88,7 @@ app.post('/', async (req, res) => {
     
     const tenantName = tenantToken.displayName;
     const timestamp = Date.now().toString();
-    
+    console.log(tenantName)
     // Device document
     const deviceDocRef = db
       .collection("automate-ai")
