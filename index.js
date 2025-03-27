@@ -139,7 +139,7 @@ app.post('/', async (req, res) => {
     batch.set(dataDocRef, { value: data });
     
     await batch.commit();
-    
+    eventEmitter.emit('data', { deviceId, channel, data, timestamp });
     res.status(200).send({ success: true });
 
   } catch (error) {
