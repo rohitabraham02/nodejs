@@ -71,6 +71,8 @@ eventEmitter.on('data', (data, senderWs) => {
 
 app.post('/', async (req, res) => {
   try {
+    console.log("req"+req.headers.authorization);
+    console.log("req1"+req.headers.authorization.split('Bearer ')[1]);
     const idToken = req.headers.authorization.split('Bearer ')[1];
     const decodedIdToken = await admin.auth().verifyIdToken(idToken);
     const tenantToken = await admin.auth().tenantManager().getTenant(decodedIdToken.firebase.tenant);
