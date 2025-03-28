@@ -60,6 +60,7 @@ wss.on('connection', (ws, req) => {
 
 eventEmitter.on('data', (data, senderWs) => {
   // Broadcast data to all connected WebSocket clients except the sender
+  console.log(data);
   for (const deviceId in clients) {
     clients[deviceId].forEach(client => {
       if (client !== senderWs) {
