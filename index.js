@@ -60,6 +60,7 @@ wss.on('connection', (ws, req) => {
 
 eventEmitter.on('data', (data, senderWs) => {
   // Broadcast data to all connected WebSocket clients except the sender
+  console.log("+++data++++");
   console.log(data);
   for (const deviceId in clients) {
     clients[deviceId].forEach(client => {
@@ -75,7 +76,6 @@ app.post('/', async (req, res) => {
     const idToken = req.headers.authorization.split('Bearer ')[1];
     const decodedIdToken = await admin.auth().verifyIdToken(idToken);
     const tenantToken = await admin.auth().tenantManager().getTenant(decodedIdToken.firebase.tenant);
-    console.log(req.body)
     const { deviceId, channel, data } = req.body;
     
     if (!deviceId || typeof channel !== 'string' || !data) {
